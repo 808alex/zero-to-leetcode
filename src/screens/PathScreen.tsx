@@ -5,27 +5,28 @@ import { useProgress, achievementCount } from "../state";
 import { streakOf } from "../lib/storage";
 import { play } from "../lib/sound";
 import { Pip } from "../components/Mascot";
-import { Check, Crown, Dumbbell, Flame, Gear, Lock, Star, Trophy, Book, Play } from "../components/Icons";
+import { Check, Crown, Bolt, Warn, Flame, Gear, Lock, Star, Trophy, Book, Play, Flag } from "../components/Icons";
 import { ACHIEVEMENTS } from "../lib/achievements";
 
 type Props = {
   justDone?: string;
   onStart: (levelId: string, start: "lesson" | "questions") => void;
-  onPractice: () => void;
+  onQuickfire: () => void;
+  onMistakes: () => void;
+  onGuide: () => void;
   onAchievements: () => void;
   onSettings: () => void;
 };
 
 const OFFSETS = [0, 62, 96, 62, 0, -62, -96, -62];
 const STEP = 112;
-const TOP = 100;
+const TOP = 84;
 
-export function PathScreen({ justDone, onStart, onPractice, onAchievements, onSettings }: Props) {
+export function PathScreen({ justDone, onStart, onQuickfire, onMistakes, onGuide, onAchievements, onSettings }: Props) {
   const { progress, isUnlocked, currentLevel } = useProgress();
   const [open, setOpen] = useState<string | null>(null);
   const [shake, setShake] = useState<string | null>(null);
   const streak = streakOf(progress.days);
-  const missed = Object.keys(progress.missed).length;
   const nextAfterDone = justDone ? currentLevel : null;
 
   useLayoutEffect(() => {
@@ -62,8 +63,11 @@ export function PathScreen({ justDone, onStart, onPractice, onAchievements, onSe
           <div className={`streak ${streak.activeToday ? "lit" : ""}`} title={streak.activeToday ? "Streak: you've practised today" : "Answer a question today to keep your streak"}>
             <Flame size={22} /><span>{streak.count}</span>
           </div>
-          <button className="icon-btn labelled" onClick={onPractice} title="Practice your mistakes">
-            <Dumbbell /><span className="hide-sm">Practice</span>{missed > 0 && <span className="badge">{missed > 99 ? "99+" : missed}</span>}
+          <button className="icon-btn labelled" onClick={onQuickfire} title="Quickfire: 10 random quick questions">
+            <Bolt /><span className="hide-sm">Quickfire</span>
+          </button>
+          <button className="icon-btn labelled" onClick={onMistakes} title="Common mistakes and how to fix them">
+            <Warn /><span className="hide-sm">Mistakes</span>
           </button>
           <button className="icon-btn labelled" onClick={onAchievements} title="Achievements">
             <Trophy /><span className="hide-sm">{achievementCount(progress)}/{ACHIEVEMENTS.length}</span>
@@ -167,8 +171,18 @@ export function PathScreen({ justDone, onStart, onPractice, onAchievements, onSe
           );
         })}
         <footer className="path-end">
-          <Pip mood={progress.done.b5 ? "cheer" : "think"} size={90} />
-          <p>{progress.done.b5 ? "You're LeetCode ready. Keep the streak going with practice and real problems." : "At the end of the road: LeetCode ready."}</p>
+          <div className="grad-card">
+            <Pip mood={progress.done.b5 ? "cheer" : "happy"} size={96} />
+            <div>
+              <div className="unit-num">{progress.done.b5 ? "You made it" : "The end of the road"}</div>
+              <h2>Next stop: LeetCode</h2>
+              <p>How to set it up, what a problem looks like in Python, and the habits from these levels that matter most once you're on your own. Open it any time.</p>
+              <div className="row start">
+                <button className="btn primary" onClick={onGuide}><Flag size={18} /> Read the guide</button>
+                <a className="btn secondary" href="https://leetcode.com/" target="_blank" rel="noopener">leetcode.com ↗</a>
+              </div>
+            </div>
+          </div>
         </footer>
       </main>
     </div>

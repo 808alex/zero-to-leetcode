@@ -15,4 +15,7 @@ export const skillOf = (l: Level, qid: string) => l.skills.find((s) => s.questio
 export const unitOf = (id: string) => UNITS.find((u) => u.levels.includes(id) || u.boss === id)!;
 export const unitIndex = (id: string) => UNITS.findIndex((u) => u.id === id);
 
+export const MISTAKES = CONTENT.mistakes;
+export const MISTAKE_CATEGORIES = CONTENT.mistakeCategories;
+
 export const TOTAL_QUESTIONS = Object.keys(QUESTIONS).length;

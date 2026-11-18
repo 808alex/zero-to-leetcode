@@ -19,6 +19,9 @@ export const Flame = ({ size = 24, className }: P) => (
 );
 export const Trophy = (p: P) => <S {...p}><path d="M8 4h8v5a4 4 0 0 1-8 0z" /><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M9 17h6" /></S>;
 export const Gear = (p: P) => <S {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></S>;
+export const Flag = (p: P) => <S {...p}><path d="M5 21V4" /><path d="M5 4h11l-2 4 2 4H5" fill="currentColor" /></S>;
+export const Bolt = (p: P) => <S {...p}><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" /></S>;
+export const Warn = (p: P) => <S {...p}><path d="M12 3l9.5 17h-19z" /><path d="M12 10v4.5M12 17.5v.01" /></S>;
 export const Dumbbell = (p: P) => <S {...p}><path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12" /></S>;
 export const Close = (p: P) => <S {...p}><path d="M6 6l12 12M18 6L6 18" /></S>;
 export const Bulb = (p: P) => <S {...p}><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" /></S>;
@@ -53,6 +56,7 @@ const BADGE_PATHS: Record<string, React.ReactNode> = {
   eye: <><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
   brick: <><rect x="3" y="5" width="18" height="14" rx="1.5" /><path d="M3 12h18M9 5v7M15 12v7" /></>,
   dumbbell: <path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12" />,
+  bolt: <path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor" stroke="none" />,
   flame: <path d="M12 2.5c1 3.2 4.8 5.3 4.8 10.1a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.3 2-4.4.2 1.4.9 2.4 1.9 2.9-.4-3.1.5-6.2.9-8.6zM12 21a3.5 3.5 0 0 0 3.5-3.5" fill="currentColor" stroke="none" />,
   flag: <><path d="M5 21V4" /><path d="M5 4h11l-2 4 2 4H5" fill="currentColor" /></>,
   crown: <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="currentColor" stroke="none" />,

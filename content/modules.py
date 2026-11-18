@@ -1,5 +1,5 @@
 STAGES = [
-    {"id": "s0", "title": "Dip your toes back in", "blurb": "Variables, if, while, for, strings, lists, functions. Small steps, lots of reps, nothing assumed."},
+    {"id": "s0", "title": "Dip your toes in", "blurb": "Variables, if, while, for, strings, lists, functions. Small steps, lots of reps, nothing assumed."},
     {"id": "s1", "title": "Get the rust off", "blurb": "Sharpen the basics into interview Python: the toolkit, complexity, recursion."},
     {"id": "s2", "title": "The patterns", "blurb": "Twelve patterns that cover most LeetCode problems. Template, drills, then real problems."},
     {"id": "s3", "title": "Interview mode", "blurb": "Timed practice, spaced re-solving, mocks, and what comes after the core."},
@@ -8,7 +8,7 @@ STAGES = [
 E, M, H = "Easy", "Medium", "Hard"
 
 MODULES = [
-    {"id": "z1", "stage": "s0", "title": "Hello again", "short": "Variables, input, print, arithmetic", "lc": []},
+    {"id": "z1", "stage": "s0", "title": "Hello, Python", "short": "Variables, input, print, arithmetic", "lc": []},
     {"id": "z2", "stage": "s0", "title": "Making decisions", "short": "if, elif, else, and/or", "lc": []},
     {"id": "z3", "stage": "s0", "title": "While loops", "short": "Start, condition, step; tracing by hand", "lc": []},
     {"id": "z4", "stage": "s0", "title": "For loops & range", "short": "range, looping over things, break, continue", "lc": []},

@@ -5,17 +5,19 @@ import { Pip } from "../components/Mascot";
 import { Heart } from "../components/Icons";
 import { LeetCodeList } from "../components/LeetCodeList";
 
-type Props = { level: Level | null; practice: boolean; boss: boolean; hearts: number; total: number; seconds: number; nextId?: string; onContinue: () => void };
+type Quick = { score: number; total: number; bestCombo: number; best: number };
+type Props = { level: Level | null; quick: Quick | null; boss: boolean; hearts: number; total: number; seconds: number; nextId?: string; onContinue: () => void };
 
 const fmt = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`);
 
-export function LevelComplete({ level, practice, boss, hearts, total, seconds, nextId, onContinue }: Props) {
+export function LevelComplete({ level, quick, boss, hearts, total, seconds, nextId, onContinue }: Props) {
+  const practice = !!quick;
   const { progress } = useProgress();
   const next = nextId ? LEVELS[nextId] : undefined;
-  const title = practice ? "Practice done" : boss ? "Boss defeated!" : "Level complete!";
+  const title = quick ? (quick.score === quick.total ? "Perfect round!" : "Quickfire done") : boss ? "Boss defeated!" : "Level complete!";
   return (
     <div className="center-screen complete">
-      <Pip mood="cheer" size={140} say={boss ? "You beat it!" : practice ? "Good reps." : "Let's go!"} />
+      <Pip mood={quick && quick.score < quick.total / 2 ? "think" : "cheer"} size={140} say={boss ? "You beat it!" : quick ? (quick.score >= quick.best && quick.score > 0 ? "New best!" : "Good reps.") : "Let's go!"} />
       <h1 className="pop-in">{title}</h1>
       {level && <p className="lede">{level.title}</p>}
       <div className="stat-row">
@@ -25,7 +27,13 @@ export function LevelComplete({ level, practice, boss, hearts, total, seconds, n
             <span>hearts left</span>
           </div>
         )}
-        <div className="stat-tile"><div className="stat-big">{total}</div><span>{practice ? "answered" : "questions"}</span></div>
+        {quick ? (
+          <>
+            <div className="stat-tile"><div className="stat-big">{quick.score}/{quick.total}</div><span>right</span></div>
+            <div className="stat-tile"><div className="stat-big">{quick.bestCombo}</div><span>best streak</span></div>
+            <div className="stat-tile"><div className="stat-big">{quick.best}</div><span>personal best</span></div>
+          </>
+        ) : <div className="stat-tile"><div className="stat-big">{total}</div><span>questions</span></div>}
         <div className="stat-tile"><div className="stat-big">{fmt(seconds)}</div><span>time</span></div>
       </div>
       {level && level.lc.length > 0 && (

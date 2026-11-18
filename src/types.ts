@@ -56,7 +56,22 @@ export type CodeQuestion = TestSpec & {
 
 export type Question = MCQuestion | FillQuestion | CodeQuestion;
 
+export type Mistake = {
+  id: string;
+  cat: string;
+  level: string;
+  title: string;
+  wrong: string;
+  right: string;
+  why: string;
+  wrongOut?: string;
+  wrongErr?: string | null;
+  rightOut?: string;
+};
+
 export type Content = {
+  mistakes: Mistake[];
+  mistakeCategories: string[];
   units: Unit[];
   levels: Level[];
   questions: Record<string, Question>;

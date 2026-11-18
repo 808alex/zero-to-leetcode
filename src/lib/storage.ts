@@ -15,7 +15,7 @@ export type Progress = {
   lc: Record<string, number>;
   ach: Record<string, number>;
   days: string[];
-  stats: { mc: number; fill: number; fix: number; code: number; practice: number };
+  stats: { mc: number; fill: number; fix: number; code: number; practice: number; quickBest: number };
   settings: { theme: ThemeId; sound: boolean; unlockAll: boolean };
 };
 
@@ -25,7 +25,7 @@ export function freshProgress(): Progress {
   const dark = typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches;
   return {
     v: 1, done: {}, partial: {}, missed: {}, lc: {}, ach: {}, days: [],
-    stats: { mc: 0, fill: 0, fix: 0, code: 0, practice: 0 },
+    stats: { mc: 0, fill: 0, fix: 0, code: 0, practice: 0, quickBest: 0 },
     settings: { theme: dark ? "midnight" : "jungle", sound: true, unlockAll: false },
   };
 }

@@ -1,5 +1,7 @@
 === z1
-A year away means the syntax has gone fuzzy, and your brain isn't in "think in steps" mode yet. That's normal, and it comes back faster than learning it the first time. This unit assumes nothing. Read slowly, and type the examples yourself rather than copy-pasting. The questions are small on purpose: the point is reps.
+This unit is for two kinds of people: complete beginners, and anyone who has coded before but can't remember how any of it goes. Either way it assumes nothing and starts from the very first line of Python.
+
+**New to coding?** Read slowly and type the examples out yourself rather than copy-pasting; typing is how the syntax sticks. **Coming back to it?** Skim the cards and let the questions show you what you've forgotten. Either way the questions are small on purpose: lots of quick reps beat one big exercise.
 
 The coding questions in Unit 0 work like classic beginner programs: read with `input()`, print the answer, and the tests feed in the input and check what you printed.
 
@@ -117,7 +119,7 @@ elif n % 3 == 0:
 </details>
 
 === z3
-While loops are where rusty brains stall, so this level goes slowly.
+While loops are where most people get stuck at first, and the first thing to go when you are out of practice, so this level goes slowly.
 
 ## The shape of every while loop
 

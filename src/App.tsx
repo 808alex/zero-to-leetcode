@@ -3,12 +3,16 @@ import { ProgressProvider, useProgress } from "./state";
 import { PathScreen } from "./screens/PathScreen";
 import { Session } from "./screens/Session";
 import { AchievementsPanel, SettingsPanel } from "./screens/Panels";
+import { MistakesScreen } from "./screens/MistakesScreen";
+import { GuideScreen } from "./screens/GuideScreen";
 import { Badge } from "./components/Icons";
 
 type Screen =
   | { name: "path"; justDone?: string }
   | { name: "level"; id: string; start: "lesson" | "questions"; key: number }
-  | { name: "practice"; key: number };
+  | { name: "quickfire"; key: number }
+  | { name: "mistakes" }
+  | { name: "guide" };
 
 function Toasts() {
   const { toasts, dismissToast } = useProgress();
@@ -39,12 +43,16 @@ function Game() {
       {screen.name === "path" && (
         <PathScreen justDone={screen.justDone}
           onStart={(id, start) => setScreen({ name: "level", id, start, key: Date.now() })}
-          onPractice={() => setScreen({ name: "practice", key: Date.now() })}
+          onQuickfire={() => setScreen({ name: "quickfire", key: Date.now() })}
+          onMistakes={() => setScreen({ name: "mistakes" })}
+          onGuide={() => setScreen({ name: "guide" })}
           onAchievements={() => setPanel("achievements")}
           onSettings={() => setPanel("settings")} />
       )}
       {screen.name === "level" && <Session key={screen.key} kind="level" levelId={screen.id} start={screen.start} onExit={back} />}
-      {screen.name === "practice" && <Session key={screen.key} kind="practice" onExit={() => back()} />}
+      {screen.name === "quickfire" && <Session key={screen.key} kind="quickfire" onExit={() => back()} />}
+      {screen.name === "mistakes" && <MistakesScreen onBack={() => back()} />}
+      {screen.name === "guide" && <GuideScreen onBack={() => back()} onMistakes={() => setScreen({ name: "mistakes" })} />}
       {panel === "settings" && <SettingsPanel onClose={() => setPanel("")} />}
       {panel === "achievements" && <AchievementsPanel onClose={() => setPanel("")} />}
       <Toasts />

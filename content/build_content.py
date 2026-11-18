@@ -16,6 +16,7 @@ from drills import DRILLS  # noqa: E402
 import drills_z  # noqa: E402,F401
 from harness import PRELUDE, HARNESS, STDOUT_HARNESS, build_program  # noqa: E402
 from game import LEVELS, BOSSES  # noqa: E402
+from mistakes import MISTAKES, CATEGORIES  # noqa: E402
 
 OUT = HERE.parent / "src" / "content" / "content.json"
 DRILL = {d["id"]: d for d in DRILLS}
@@ -23,7 +24,7 @@ MOD = {m["id"]: m for m in MODULES}
 errors = []
 
 UNITS = [
-    {"id": "u0", "title": "Dip your toes back in", "blurb": STAGES[0]["blurb"], "levels": ["z1", "z2", "z3", "z4", "z5", "z6", "z7"], "boss": "b0"},
+    {"id": "u0", "title": "Dip your toes in", "blurb": STAGES[0]["blurb"], "levels": ["z1", "z2", "z3", "z4", "z5", "z6", "z7"], "boss": "b0"},
     {"id": "u1", "title": "Get the rust off", "blurb": STAGES[1]["blurb"], "levels": ["m1", "m2", "m3", "m4"], "boss": "b1"},
     {"id": "u2", "title": "Core patterns", "blurb": "Hashing, two pointers, sliding window, stacks, binary search.", "levels": ["p1", "p2", "p3", "p4", "p5"], "boss": "b2"},
     {"id": "u3", "title": "Data structures", "blurb": "Linked lists, trees and heaps.", "levels": ["p6", "p7", "p8"], "boss": "b3"},
@@ -247,11 +248,54 @@ for a in BOSSES["b5"]["challenges"][2]["args"]:
     if expected_from_function(BOSSES["b5"]["challenges"][2]["solution"], "longest_palindrome_len", [a], "")[0] != brute_pal(*a):
         errors.append(f"b5-3 cross-check failed for {a}")
 
+# ---------------------------------------------------------------- common mistakes: record what Python really says
+def run_capture(code, stdin=""):
+    feed = io.StringIO(stdin)
+
+    def _input(prompt=""):
+        line = feed.readline()
+        if line == "":
+            raise EOFError("EOF when reading a line")
+        return line.rstrip("\n")
+    buf = io.StringIO()
+    err = None
+    signal.setitimer(signal.ITIMER_REAL, 3, 0.05)
+    try:
+        with contextlib.redirect_stdout(buf):
+            exec(compile(code, "<snippet>", "exec"), {"__name__": "__main__", "input": _input})
+    except Timeout:
+        err = "(never finishes)"
+    except SyntaxError as e:
+        err = f"{type(e).__name__}: {e.msg}"
+    except RecursionError:
+        err = "RecursionError: maximum recursion depth exceeded"
+    except Exception as e:
+        err = f"{type(e).__name__}: {e}"
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0, 0)
+    return norm_out(buf.getvalue()), err
+
+
+mistakes = []
+for m in MISTAKES:
+    if m["level"] not in LEVELS and m["level"] not in MOD:
+        errors.append(f"mistake {m['id']}: unknown level {m['level']}")
+    item = {k: m[k] for k in ("id", "cat", "level", "title", "wrong", "right", "why")}
+    if m["run"]:
+        wout, werr = run_capture(m["wrong"], m["stdin"])
+        rout, rerr = run_capture(m["right"], m["stdin"])
+        if rerr:
+            errors.append(f"mistake {m['id']}: the right version raises {rerr}")
+        if (wout, werr) == (rout, rerr):
+            errors.append(f"mistake {m['id']}: wrong and right versions behave the same")
+        item.update({"wrongOut": wout, "wrongErr": werr, "rightOut": rout})
+    mistakes.append(item)
+
 if errors:
     print("\n".join(errors))
     sys.exit(1)
 
-data = {"units": UNITS, "levels": levels, "questions": questions,
+data = {"units": UNITS, "levels": levels, "questions": questions, "mistakes": mistakes, "mistakeCategories": CATEGORIES,
         "harness": {"prelude": PRELUDE, "functions": HARNESS, "stdout": STDOUT_HARNESS}}
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(json.dumps(data, ensure_ascii=False))

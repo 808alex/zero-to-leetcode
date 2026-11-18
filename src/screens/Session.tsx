@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LEVELS, QUESTIONS, ORDER, levelQuestions, skillOf } from "../content";
+import type { Progress } from "../lib/storage";
 import type { CodeQuestion, Level, Question } from "../types";
 import { useProgress, touchToday } from "../state";
 import { startPython } from "../lib/python";
@@ -7,7 +8,7 @@ import { play } from "../lib/sound";
 import { confetti } from "../lib/confetti";
 import { CodeView2, FillView, MCView, type Result } from "../components/Questions";
 import { Pip, type Mood } from "../components/Mascot";
-import { Close, Heart, Crown } from "../components/Icons";
+import { Close, Heart, Crown, Flame } from "../components/Icons";
 import { LessonCards } from "./LessonCards";
 import { Helper } from "./Helper";
 import { LevelComplete } from "./LevelComplete";
@@ -22,25 +23,31 @@ const MAX_HEARTS = 3;
 
 export type SessionProps =
   | { kind: "level"; levelId: string; start: "lesson" | "questions"; onExit: (completed?: string) => void }
-  | { kind: "practice"; onExit: (completed?: string) => void };
+  | { kind: "quickfire"; onExit: (completed?: string) => void };
 
-function practiceQueue(done: Record<string, unknown>, missed: Record<string, number>): string[] {
-  const doneLevels = Object.keys(done).map((id) => LEVELS[id]).filter((l) => l && l.kind === "lesson");
-  const missedIds = Object.entries(missed).sort((a, b) => b[1] - a[1]).map(([id]) => id).filter((id) => QUESTIONS[id]).slice(0, 6);
-  const pool = doneLevels.flatMap(levelQuestions).filter((id) => !missedIds.includes(id) && QUESTIONS[id].kind !== "code");
-  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  return [...missedIds, ...pool].slice(0, 8);
+const QUICK_ROUND = 10;
+const shuffled = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+
+/** Quickfire: random quick questions (what does this print / fill in the blank) from every level you've reached,
+ *  with up to 3 of your past mistakes mixed in. */
+function quickfireQueue(p: Progress, current: string | null): string[] {
+  const reachedUpTo = current ? ORDER.indexOf(current) : ORDER.length - 1;
+  const reached = ORDER.slice(0, reachedUpTo + 1).map((id) => LEVELS[id]).filter((l) => l.kind === "lesson" && (p.done[l.id] || l.id === current || p.settings.unlockAll));
+  const pool = reached.flatMap(levelQuestions).filter((id) => QUESTIONS[id].kind === "mc" || QUESTIONS[id].kind === "fill");
+  const missed = shuffled(pool.filter((id) => p.missed[id])).slice(0, 3);
+  const rest = shuffled(pool.filter((id) => !missed.includes(id)));
+  return shuffled([...missed, ...rest].slice(0, QUICK_ROUND));
 }
 
 export function Session(props: SessionProps) {
-  const { progress, update } = useProgress();
+  const { progress, update, currentLevel } = useProgress();
   const level: Level | null = props.kind === "level" ? LEVELS[props.levelId] : null;
   const isBoss = level?.kind === "boss";
-  const isPractice = props.kind === "practice";
-  const usesHearts = !isPractice;
+  const isQuick = props.kind === "quickfire";
+  const usesHearts = !isQuick;
 
   const initial = useMemo(() => {
-    if (isPractice) return { queue: practiceQueue(progress.done, progress.missed), passed: [] as string[] };
+    if (isQuick) return { queue: quickfireQueue(progress, currentLevel), passed: [] as string[] };
     const all = levelQuestions(level!);
     const partial = !isBoss && !progress.done[level!.id] ? (progress.partial[level!.id] || []).filter((q) => all.includes(q)) : [];
     return { queue: all.filter((q) => !partial.includes(q)), passed: partial };
@@ -48,7 +55,7 @@ export function Session(props: SessionProps) {
   }, []);
 
   const [phase, setPhase] = useState<Phase>(() => {
-    if (isPractice) return initial.queue.length ? "questions" : "empty";
+    if (isQuick) return initial.queue.length ? "questions" : "empty";
     if (isBoss) return "intro";
     return props.kind === "level" && props.start === "lesson" ? "lesson" : "questions";
   });
@@ -66,6 +73,9 @@ export function Session(props: SessionProps) {
   const [heartAnim, setHeartAnim] = useState(-1);
   const [wrongFirst, setWrongFirst] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [score, setScore] = useState(0);
   const startedAt = useRef(Date.now());
   const codeRef = useRef<() => string>(() => "");
   const lastRunRef = useRef<string>("");
@@ -78,8 +88,8 @@ export function Session(props: SessionProps) {
   const q: Question | undefined = qid ? QUESTIONS[qid] : undefined;
   const skill = level && qid ? skillOf(level, qid) : undefined;
   const failCount = qid ? fails[qid] || 0 : 0;
-  const helpAvailable = isBoss ? failCount >= 1 : helperAll || failCount >= 3 || isPractice;
-  const helpReason = isBoss ? "Help unlocks after a failed submit" : `Help unlocks after ${3 - failCount} more ${3 - failCount === 1 ? "try" : "tries"}`;
+  const helpAvailable = isQuick ? false : isBoss ? failCount >= 1 : helperAll || failCount >= 3;
+  const helpReason = isQuick ? "No help in Quickfire" : isBoss ? "Help unlocks after a failed submit" : `Help unlocks after ${3 - failCount} more ${3 - failCount === 1 ? "try" : "tries"}`;
 
   const exit = (completed?: string) => props.onExit(completed);
 
@@ -108,28 +118,32 @@ export function Session(props: SessionProps) {
         touchToday(p);
         const k = q.kind === "mc" ? "mc" : q.kind === "fill" ? "fill" : q.kind === "fix" ? "fix" : "code";
         p.stats[k] += 1;
-        if (isPractice) { p.stats.practice += 1; delete p.missed[id]; }
+        if (isQuick) { p.stats.practice += 1; delete p.missed[id]; }
       });
-      setFeedback({ qid: id, correct: true, title: pick(CHEERS), mood: "cheer", body: r.detail });
+      if (isQuick) { setScore((n) => n + 1); setCombo((c) => { const n = c + 1; setBestCombo((b) => Math.max(b, n)); return n; }); }
+      const comboNote = isQuick && combo + 1 >= 3 ? <p className="fb-again">{combo + 1} in a row!</p> : null;
+      setFeedback({ qid: id, correct: true, title: pick(CHEERS), mood: "cheer", body: <>{r.detail}{comboNote}</> });
       return;
     }
     // wrong answer: quick questions, and boss submits
     const nf = { ...fails, [id]: (fails[id] || 0) + 1 };
     setFails(nf);
     setWrongFirst((s) => new Set(s).add(id));
-    if (!isPractice) update((p) => { p.missed[id] = Date.now(); });
+    update((p) => { p.missed[id] = Date.now(); });
+    if (isQuick) setCombo(0);
     if (usesHearts) {
       setHeartAnim(hearts - 1);
       setHearts((h) => h - 1);
       play("heart");
       setTimeout(() => setHeartAnim(-1), 700);
     } else play("wrong");
-    if (!isBoss) { setQueue((qq) => [...qq.slice(1), id]); }
+    if (isQuick) setQueue((qq) => qq.slice(1));
+    else if (!isBoss) setQueue((qq) => [...qq.slice(1), id]);
     const left = hearts - 1;
     const tail = usesHearts && left > 0 ? `${left} ${left === 1 ? "heart" : "hearts"} left.` : "";
     setFeedback({
       qid: id, correct: false, title: pick(OOPS), mood: "sad",
-      body: <>{r.detail}{!isBoss && <p className="fb-again">This question comes back at the end. {tail}</p>}{isBoss && tail && <p className="fb-again">{tail}</p>}</>,
+      body: <>{r.detail}{!isBoss && !isQuick && <p className="fb-again">This question comes back at the end. {tail}</p>}{isBoss && tail && <p className="fb-again">{tail}</p>}</>,
     });
   }
 
@@ -140,7 +154,12 @@ export function Session(props: SessionProps) {
   }
 
   function finish() {
-    if (isPractice) { setPhase("complete"); play("complete"); return; }
+    if (isQuick) {
+      update((p) => { p.stats.quickBest = Math.max(p.stats.quickBest || 0, score); touchToday(p); });
+      setPhase("complete"); play("complete");
+      if (score === total) { const css = getComputedStyle(document.documentElement); confetti(["--primary", "--gold", "--pink"].map((v) => css.getPropertyValue(v).trim() || "#58cc02")); }
+      return;
+    }
     const lv = level!;
     update((p) => {
       p.done[lv.id] = { at: Date.now(), hearts, assisted, comeback, firstTry: total - wrongFirst.size, total };
@@ -162,7 +181,7 @@ export function Session(props: SessionProps) {
       else setPhase("outOfHearts");
       return;
     }
-    if (fb?.correct && queue.length === 0) finish();
+    if (queue.length === 0 && (fb?.correct || isQuick)) finish();
   }
 
   // Enter continues from the feedback sheet
@@ -205,8 +224,8 @@ export function Session(props: SessionProps) {
     return (
       <div className="center-screen">
         <Pip mood="think" size={120} />
-        <h1>Nothing to practise yet</h1>
-        <p className="muted">Practice mode mixes questions you got wrong with ones from levels you've finished. Finish your first level and come back.</p>
+        <h1>Nothing to fire at you yet</h1>
+        <p className="muted">Quickfire pulls quick questions from the levels you've reached. Start your first level and come back.</p>
         <button className="btn primary big" onClick={() => exit()}>Back to the path</button>
       </div>
     );
@@ -271,14 +290,14 @@ export function Session(props: SessionProps) {
   }
 
   if (phase === "complete") {
-    return <LevelComplete level={level} practice={isPractice} hearts={hearts} total={isPractice ? answered : total}
+    return <LevelComplete level={level} quick={isQuick ? { score, total, bestCombo, best: Math.max(progress.stats.quickBest || 0, score) } : null} hearts={hearts} total={total}
       seconds={Math.round((Date.now() - startedAt.current) / 1000)} boss={isBoss}
       nextId={level ? ORDER[ORDER.indexOf(level.id) + 1] : undefined} onContinue={() => exit(level?.id)} />;
   }
 
   // ---------------------------------------------------------------- questions
   if (!q) return null;
-  const pct = Math.round((100 * passed.length) / Math.max(1, isPractice ? initial.queue.length : total));
+  const pct = Math.round((100 * (isQuick ? answered : passed.length)) / Math.max(1, total));
   const common = {
     attempt, locked: !!feedback, onResult, helpAvailable, helpReason, onHelp: openHelper, codeRef, lastRunRef,
   };
@@ -298,7 +317,9 @@ export function Session(props: SessionProps) {
               <Heart key={i} className={`${i < hearts ? "heart-on" : "heart-off"} ${i === heartAnim ? "heart-break" : ""}`} />
             ))}
           </div>
-        ) : <span className="lesson-tag">Practice</span>}
+        ) : (
+          <div className={`combo ${combo >= 3 ? "hot" : ""}`} aria-label={`${combo} in a row`} title="Answers in a row"><Flame size={20} /><span>{combo}</span></div>
+        )}
       </div>
 
       <div className="session-scroll">
@@ -306,6 +327,7 @@ export function Session(props: SessionProps) {
           <span className={`q-type type-${q.kind}`}>{typeLabel}</span>
           {skill && !isBoss && <span className="q-skill">{skill.name} · {skillDone}/{skill.questions.length}</span>}
           {isBoss && <span className="q-skill">Challenge {passed.length + 1} of {total}</span>}
+          {isQuick && <span className="q-skill">Question {Math.min(answered + (feedback ? 0 : 1), total)} of {total} · from {Object.values(LEVELS).find((l) => levelQuestions(l).includes(q.id))?.title}</span>}
         </div>
         <div className="q-anim" key={q.id + ":" + attempt}>
           {q.kind === "mc" && <MCView q={q} {...common} />}
